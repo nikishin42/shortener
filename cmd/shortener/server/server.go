@@ -16,10 +16,10 @@ type Server struct {
 	Router    *mux.Router
 }
 
-func New() *Server {
+func New(storage storage.StorageI, Shortener shortener.ShortenerI) *Server {
 	app := &Server{
-		Storage:   storage.New(),
-		Shortener: shortener.New(),
+		Storage:   storage,
+		Shortener: Shortener,
 		Router:    mux.NewRouter(),
 	}
 	app.Router.HandleFunc("/", app.Homepage).Methods(http.MethodPost)

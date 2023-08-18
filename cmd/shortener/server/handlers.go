@@ -8,10 +8,20 @@ import (
 )
 
 func (a *Server) Homepage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		log.Println("wrong method:", r.Method)
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	if r.URL.String() != "localhost:8080" && r.URL.String() != "localhost:8080/" {
+		log.Println("query not empty:", r.URL.String())
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	bodyData, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	fullURL := string(bodyData)
@@ -44,13 +54,24 @@ func (a *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Server) Redirect(w http.ResponseWriter, r *http.Request) {
-	id := "http://localhost:8080" + r.URL.String()
-	if fullURL, ok := a.Storage.GetFullURL(id); ok {
-		log.Printf("URL for %s found: %s", id, fullURL)
-		w.Header().Set("Location", fullURL)
-		w.WriteHeader(http.StatusTemporaryRedirect)
+	if r.Method != http.MethodGet {
+		log.Println("wrong method:", r.Method)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	log.Printf("URL for %s not found", id)
-	w.WriteHeader(400)
+	if r.URL.String() == "localhost:8080" || r.URL.String() == "localhost:8080/" {
+		log.Println("empty query")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	id := r.RequestURI
+	fullURL, ok := a.Storage.GetFullURL(id)
+	if !ok {
+		log.Printf("URL for %s not found", id)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	log.Printf("URL for %s found: %s", id, fullURL)
+	w.Header().Set("Location", fullURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 }

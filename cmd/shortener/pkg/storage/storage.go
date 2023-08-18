@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-//go:generate mockgen --build_flags=--mod=mod -package=storage -destination=storage_mock.go . ShortenerI
+//go:generate mockgen --build_flags=--mod=mod -package=storage -destination=storage_mock.go . StorageI
 type StorageI interface {
 	GetID(fullURL string) (string, bool)
 	GetFullURL(shortURL string) (string, bool)
