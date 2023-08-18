@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -29,7 +28,7 @@ func (c *Storage) GetFullURL(id string) (string, bool) {
 
 func (c *Storage) SetPair(id, fullURL string) error {
 	if collision, ok := c.GetFullURL(id); ok {
-		return errors.New(fmt.Sprintf("found collision: old URL %s, new URL %s, ID %s", collision, fullURL, id))
+		return fmt.Errorf("found collision: old URL %s, new URL %s, ID %s", collision, fullURL, id)
 	}
 	c.toShort[fullURL] = id
 	c.toFull[id] = fullURL
