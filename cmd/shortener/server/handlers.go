@@ -21,7 +21,7 @@ func (a *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if id, ok := a.Cache.GetID(fullURL); ok {
+	if id, ok := a.Storage.GetID(fullURL); ok {
 		log.Printf("ID for %s found: %s", fullURL, id)
 		w.Write([]byte(id))
 		return
@@ -32,7 +32,7 @@ func (a *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = a.Cache.SetPair(id, fullURL)
+	err = a.Storage.SetPair(id, fullURL)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -45,7 +45,7 @@ func (a *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 
 func (a *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 	id := "http://localhost:8080" + r.URL.String()
-	if fullURL, ok := a.Cache.GetFullURL(id); ok {
+	if fullURL, ok := a.Storage.GetFullURL(id); ok {
 		log.Printf("URL for %s found: %s", id, fullURL)
 		w.Header().Set("Location", fullURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)

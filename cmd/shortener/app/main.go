@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/nikishin42/shortener/cmd/shortener/internal/server"
+	"github.com/nikishin42/shortener/cmd/shortener/server"
 )
 
 func main() {

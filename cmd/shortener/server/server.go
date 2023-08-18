@@ -11,14 +11,14 @@ import (
 )
 
 type Server struct {
-	Cache     storage.StorageI
+	Storage   storage.StorageI
 	Shortener shortener.ShortenerI
 	Router    *mux.Router
 }
 
 func New() *Server {
 	app := &Server{
-		Cache:     storage.New(),
+		Storage:   storage.New(),
 		Shortener: shortener.New(),
 		Router:    mux.NewRouter(),
 	}
