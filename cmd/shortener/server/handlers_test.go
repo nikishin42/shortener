@@ -1,5 +1,6 @@
 package server
 
+
 import (
 	"io"
 	"net/http"
@@ -10,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"github.com/nikishin42/shortener/cmd/shortener/pkg/shortener"
+	"github.com/nikishin42/shortener/cmd/shortener/pkg/abbreviator"
 	"github.com/nikishin42/shortener/cmd/shortener/pkg/storage"
 )
 
@@ -36,7 +37,7 @@ func TestServer_Homepage(t *testing.T) {
 	tests := []struct {
 		name  string
 		args  args
-		setup func(shortener *shortener.MockShortenerI, storage *storage.MockStorageI)
+		setup func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI)
 		exp   expexted
 	}{
 		{
@@ -45,7 +46,7 @@ func TestServer_Homepage(t *testing.T) {
 				method: http.MethodGet,
 				body:   strings.NewReader("https://music.yandex.ru/"),
 			},
-			setup: func(shortener *shortener.MockShortenerI, storage *storage.MockStorageI) {},
+			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {},
 			exp: expexted{
 				status: http.StatusMethodNotAllowed,
 				body:   "",
@@ -58,7 +59,7 @@ func TestServer_Homepage(t *testing.T) {
 				body:   strings.NewReader("https://music.yandex.ru/"),
 				query:  "not_empty",
 			},
-			setup: func(shortener *shortener.MockShortenerI, storage *storage.MockStorageI) {},
+			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {},
 			exp: expexted{
 				status: http.StatusBadRequest,
 				body:   "",
@@ -70,7 +71,7 @@ func TestServer_Homepage(t *testing.T) {
 				method: http.MethodPost,
 				body:   errReader(0),
 			},
-			setup: func(shortener *shortener.MockShortenerI, storage *storage.MockStorageI) {},
+			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {},
 			exp: expexted{
 				status: http.StatusBadRequest,
 				body:   "",
@@ -82,7 +83,7 @@ func TestServer_Homepage(t *testing.T) {
 				method: http.MethodPost,
 				body:   strings.NewReader("literally not URL"),
 			},
-			setup: func(shortener *shortener.MockShortenerI, storage *storage.MockStorageI) {},
+			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {},
 			exp: expexted{
 				status: http.StatusBadRequest,
 				body:   "",
@@ -94,9 +95,9 @@ func TestServer_Homepage(t *testing.T) {
 				method: http.MethodPost,
 				body:   strings.NewReader("https://music.yandex.ru/"),
 			},
-			setup: func(shortener *shortener.MockShortenerI, storage *storage.MockStorageI) {
+			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
 				storage.EXPECT().GetID("https://music.yandex.ru/").Return("", false)
-				shortener.EXPECT().CreateID([]byte("https://music.yandex.ru/")).Return("http://localhost:8080/Fy", nil)
+				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/")).Return("http://localhost:8080/Fy", nil)
 				storage.EXPECT().SetPair("http://localhost:8080/Fy", "https://music.yandex.ru/").Return(nil)
 			},
 			exp: expexted{
@@ -110,9 +111,9 @@ func TestServer_Homepage(t *testing.T) {
 				method: http.MethodPost,
 				body:   strings.NewReader("https://music.yandex.ru/"),
 			},
-			setup: func(shortener *shortener.MockShortenerI, storage *storage.MockStorageI) {
+			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
 				storage.EXPECT().GetID("https://music.yandex.ru/").Return("", false)
-				shortener.EXPECT().CreateID([]byte("https://music.yandex.ru/")).Return("", assert.AnError)
+				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/")).Return("", assert.AnError)
 			},
 			exp: expexted{
 				status: http.StatusInternalServerError,
@@ -125,9 +126,9 @@ func TestServer_Homepage(t *testing.T) {
 				method: http.MethodPost,
 				body:   strings.NewReader("https://music.yandex.ru/"),
 			},
-			setup: func(shortener *shortener.MockShortenerI, storage *storage.MockStorageI) {
+			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
 				storage.EXPECT().GetID("https://music.yandex.ru/").Return("", false)
-				shortener.EXPECT().CreateID([]byte("https://music.yandex.ru/")).Return("http://localhost:8080/Fy", nil)
+				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/")).Return("http://localhost:8080/Fy", nil)
 				storage.EXPECT().SetPair("http://localhost:8080/Fy", "https://music.yandex.ru/").Return(assert.AnError)
 			},
 			exp: expexted{
@@ -141,7 +142,7 @@ func TestServer_Homepage(t *testing.T) {
 				method: http.MethodPost,
 				body:   strings.NewReader("https://music.yandex.ru/"),
 			},
-			setup: func(shortener *shortener.MockShortenerI, storage *storage.MockStorageI) {
+			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
 				storage.EXPECT().GetID("https://music.yandex.ru/").Return("http://localhost:8080/Fy", true)
 			},
 			exp: expexted{
@@ -157,10 +158,10 @@ func TestServer_Homepage(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockStorage := storage.NewMockStorageI(ctrl)
-			mockShortener := shortener.NewMockShortenerI(ctrl)
-			tc.setup(mockShortener, mockStorage)
+			mockAbbreviator := abbreviator.NewMockAbbreviatorI(ctrl)
+			tc.setup(mockAbbreviator, mockStorage)
 
-			a := New(mockStorage, mockShortener)
+			a := New(mockStorage, mockAbbreviator)
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(tc.args.method, "localhost:8080/"+tc.args.query, tc.args.body)
 			a.Homepage(w, r)
@@ -249,10 +250,10 @@ func TestServer_Redirect(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockStorage := storage.NewMockStorageI(ctrl)
-			mockShortener := shortener.NewMockShortenerI(ctrl)
+			mockAbbreviator := abbreviator.NewMockAbbreviatorI(ctrl)
 			tc.setup(mockStorage)
 
-			a := New(mockStorage, mockShortener)
+			a := New(mockStorage, mockAbbreviator)
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(tc.args.method, "localhost:8080/"+tc.args.query, nil)
 			a.Redirect(w, r)
