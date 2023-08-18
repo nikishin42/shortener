@@ -36,7 +36,7 @@ func (a *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(id))
 		return
 	}
-	id, err := a.Shortener.CreateID(bodyData)
+	id, err := a.Abbreviator.CreateID(bodyData)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
