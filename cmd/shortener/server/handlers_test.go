@@ -98,7 +98,7 @@ func TestServer_Homepage(t *testing.T) {
 			},
 			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
 				storage.EXPECT().GetID("https://music.yandex.ru/").Return("", false)
-				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/")).Return(constants.HTTPHostPrefix+"/"+"Fy", nil)
+				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/"), constants.HTTPHostPrefix).Return(constants.HTTPHostPrefix+"/"+"Fy", nil)
 				storage.EXPECT().SetPair(constants.HTTPHostPrefix+"/"+"Fy", "https://music.yandex.ru/").Return(nil)
 			},
 			exp: expexted{
@@ -114,7 +114,7 @@ func TestServer_Homepage(t *testing.T) {
 			},
 			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
 				storage.EXPECT().GetID("https://music.yandex.ru/").Return("", false)
-				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/")).Return("", assert.AnError)
+				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/"), constants.HTTPHostPrefix).Return("", assert.AnError)
 			},
 			exp: expexted{
 				status: http.StatusInternalServerError,
@@ -129,7 +129,7 @@ func TestServer_Homepage(t *testing.T) {
 			},
 			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
 				storage.EXPECT().GetID("https://music.yandex.ru/").Return("", false)
-				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/")).Return(constants.HTTPHostPrefix+"/"+"Fy", nil)
+				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/"), constants.HTTPHostPrefix).Return(constants.HTTPHostPrefix+"/"+"Fy", nil)
 				storage.EXPECT().SetPair(constants.HTTPHostPrefix+"/"+"Fy", "https://music.yandex.ru/").Return(assert.AnError)
 			},
 			exp: expexted{
