@@ -1,6 +1,5 @@
 package server
 
-
 import (
 	"io"
 	"net/http"

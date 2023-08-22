@@ -6,6 +6,8 @@ import (
 	"log"
 
 	"github.com/sqids/sqids-go"
+
+	"github.com/nikishin42/shortener/cmd/shortener/constants"
 )
 
 //go:generate mockgen --build_flags=--mod=mod -package=abbreviator -destination=abbreviator_mock.go . AbbreviatorI
@@ -38,6 +40,6 @@ func (s *Abbreviator) CreateID(data []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	shortURL = "localhost:8080/" + shortURL
+	shortURL = constants.HostPrefix + shortURL
 	return shortURL, nil
 }

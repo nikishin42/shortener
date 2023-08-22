@@ -5,17 +5,14 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+
+	"github.com/nikishin42/shortener/cmd/shortener/constants"
 )
 
 func (a *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		log.Println("wrong method:", r.Method)
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-	if r.URL.String() != "localhost:8080" && r.URL.String() != "localhost:8080/" {
-		log.Println("query not empty:", r.URL.String())
-		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	bodyData, err := io.ReadAll(r.Body)
@@ -59,12 +56,12 @@ func (a *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	if r.URL.String() == "localhost:8080" || r.URL.String() == "localhost:8080/" {
+	if len(r.URL.String()) == 0 {
 		log.Println("empty query")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	id := r.RequestURI
+	id := constants.HostPrefix + r.URL.String()[1:]
 	fullURL, ok := a.Storage.GetFullURL(id)
 	if !ok {
 		log.Printf("URL for %s not found", id)
