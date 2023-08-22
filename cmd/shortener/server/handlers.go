@@ -15,6 +15,11 @@ func (a *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+	if len(r.URL.Path) > 1 {
+		log.Println("query not empty")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	bodyData, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
@@ -56,12 +61,12 @@ func (a *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	if len(r.URL.String()) == 0 {
+	if len(r.URL.Path) < 2 {
 		log.Println("empty query")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	id := constants.HostPrefix + r.URL.String()[1:]
+	id := constants.HostPrefix + r.URL.Path[1:]
 	fullURL, ok := a.Storage.GetFullURL(id)
 	if !ok {
 		log.Printf("URL for %s not found", id)
