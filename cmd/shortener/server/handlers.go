@@ -5,11 +5,9 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-
-	"github.com/nikishin42/shortener/cmd/shortener/constants"
 )
 
-func (a *Server) Homepage(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		log.Println("wrong method:", r.Method)
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -33,18 +31,18 @@ func (a *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if id, ok := a.Storage.GetID(fullURL); ok {
+	if id, ok := s.Storage.GetID(fullURL); ok {
 		log.Printf("ID for %s found: %s", fullURL, id)
 		w.Write([]byte(id))
 		return
 	}
-	id, err := a.Abbreviator.CreateID(bodyData)
+	id, err := s.Abbreviator.CreateID(bodyData, s.Config.BaseShortenerAddress)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = a.Storage.SetPair(id, fullURL)
+	err = s.Storage.SetPair(id, fullURL)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -55,7 +53,7 @@ func (a *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(id))
 }
 
-func (a *Server) Redirect(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		log.Println("wrong method:", r.Method)
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -66,8 +64,8 @@ func (a *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	id := constants.HostPrefix + r.URL.Path[1:]
-	fullURL, ok := a.Storage.GetFullURL(id)
+	id := s.Config.BaseShortenerAddress + "/" + r.URL.Path[1:]
+	fullURL, ok := s.Storage.GetFullURL(id)
 	if !ok {
 		log.Printf("URL for %s not found", id)
 		w.WriteHeader(http.StatusBadRequest)

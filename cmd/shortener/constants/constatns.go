@@ -1,5 +1,6 @@
 package constants
 
 const (
-	HostPrefix = "http://localhost:8080/"
+	HTTPHostPrefix = "http://localhost:8080"
+	HostPrefix     = "localhost:8080"
 )

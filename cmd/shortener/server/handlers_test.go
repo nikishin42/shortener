@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
+	"github.com/nikishin42/shortener/cmd/shortener/config"
 	"github.com/nikishin42/shortener/cmd/shortener/constants"
 	"github.com/nikishin42/shortener/cmd/shortener/pkg/abbreviator"
 	"github.com/nikishin42/shortener/cmd/shortener/pkg/storage"
@@ -97,12 +98,12 @@ func TestServer_Homepage(t *testing.T) {
 			},
 			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
 				storage.EXPECT().GetID("https://music.yandex.ru/").Return("", false)
-				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/")).Return(constants.HostPrefix+"Fy", nil)
-				storage.EXPECT().SetPair(constants.HostPrefix+"Fy", "https://music.yandex.ru/").Return(nil)
+				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/")).Return(constants.HTTPHostPrefix+"/"+"Fy", nil)
+				storage.EXPECT().SetPair(constants.HTTPHostPrefix+"/"+"Fy", "https://music.yandex.ru/").Return(nil)
 			},
 			exp: expexted{
 				status: http.StatusCreated,
-				body:   constants.HostPrefix + "Fy",
+				body:   constants.HTTPHostPrefix + "/" + "Fy",
 			},
 		},
 		{
@@ -128,8 +129,8 @@ func TestServer_Homepage(t *testing.T) {
 			},
 			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
 				storage.EXPECT().GetID("https://music.yandex.ru/").Return("", false)
-				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/")).Return(constants.HostPrefix+"Fy", nil)
-				storage.EXPECT().SetPair(constants.HostPrefix+"Fy", "https://music.yandex.ru/").Return(assert.AnError)
+				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/")).Return(constants.HTTPHostPrefix+"/"+"Fy", nil)
+				storage.EXPECT().SetPair(constants.HTTPHostPrefix+"/"+"Fy", "https://music.yandex.ru/").Return(assert.AnError)
 			},
 			exp: expexted{
 				status: http.StatusInternalServerError,
@@ -143,11 +144,11 @@ func TestServer_Homepage(t *testing.T) {
 				body:   strings.NewReader("https://music.yandex.ru/"),
 			},
 			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
-				storage.EXPECT().GetID("https://music.yandex.ru/").Return(constants.HostPrefix+"Fy", true)
+				storage.EXPECT().GetID("https://music.yandex.ru/").Return(constants.HTTPHostPrefix+"/"+"Fy", true)
 			},
 			exp: expexted{
 				status: http.StatusOK,
-				body:   constants.HostPrefix + "Fy",
+				body:   constants.HTTPHostPrefix + "/" + "Fy",
 			},
 		},
 	}
@@ -155,15 +156,19 @@ func TestServer_Homepage(t *testing.T) {
 		tc := tt
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockStorage := storage.NewMockStorageI(ctrl)
 			mockAbbreviator := abbreviator.NewMockAbbreviatorI(ctrl)
 			tc.setup(mockAbbreviator, mockStorage)
 
-			a := New(mockStorage, mockAbbreviator)
+			a := New(&config.Config{
+				Address:              constants.HTTPHostPrefix,
+				BaseShortenerAddress: constants.HTTPHostPrefix,
+			}, mockStorage, mockAbbreviator)
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest(tc.args.method, constants.HostPrefix+tc.args.query, tc.args.body)
+			r := httptest.NewRequest(tc.args.method, a.Config.Address+"/"+tc.args.query, tc.args.body)
 			a.Homepage(w, r)
 
 			assert.Equal(t, tc.exp.status, w.Code)
@@ -221,7 +226,7 @@ func TestServer_Redirect(t *testing.T) {
 				query:  "Fy",
 			},
 			setup: func(storage *storage.MockStorageI) {
-				storage.EXPECT().GetFullURL(constants.HostPrefix+"Fy").Return("", false)
+				storage.EXPECT().GetFullURL(constants.HTTPHostPrefix+"/"+"Fy").Return("", false)
 			},
 			exp: expexted{
 				status: http.StatusBadRequest,
@@ -235,7 +240,7 @@ func TestServer_Redirect(t *testing.T) {
 				query:  "Fy",
 			},
 			setup: func(storage *storage.MockStorageI) {
-				storage.EXPECT().GetFullURL(constants.HostPrefix+"Fy").Return("https://music.yandex.ru/", true)
+				storage.EXPECT().GetFullURL(constants.HTTPHostPrefix+"/"+"Fy").Return("https://music.yandex.ru/", true)
 			},
 			exp: expexted{
 				status: http.StatusTemporaryRedirect,
@@ -246,16 +251,20 @@ func TestServer_Redirect(t *testing.T) {
 	for _, tt := range tests {
 		tc := tt
 		t.Run(tc.name, func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			mockStorage := storage.NewMockStorageI(ctrl)
 			mockAbbreviator := abbreviator.NewMockAbbreviatorI(ctrl)
 			tc.setup(mockStorage)
 
-			a := New(mockStorage, mockAbbreviator)
+			a := New(&config.Config{
+				Address:              constants.HTTPHostPrefix,
+				BaseShortenerAddress: constants.HTTPHostPrefix,
+			}, mockStorage, mockAbbreviator)
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest(tc.args.method, constants.HostPrefix+tc.args.query, nil)
+			r := httptest.NewRequest(tc.args.method, a.Config.Address+"/"+tc.args.query, nil)
 			a.Redirect(w, r)
 
 			assert.Equal(t, tc.exp.status, w.Code)

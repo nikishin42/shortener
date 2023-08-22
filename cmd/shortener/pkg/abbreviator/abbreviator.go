@@ -6,13 +6,11 @@ import (
 	"log"
 
 	"github.com/sqids/sqids-go"
-
-	"github.com/nikishin42/shortener/cmd/shortener/constants"
 )
 
 //go:generate mockgen --build_flags=--mod=mod -package=abbreviator -destination=abbreviator_mock.go . AbbreviatorI
 type AbbreviatorI interface {
-	CreateID(data []byte) (string, error)
+	CreateID(data []byte, base string) (string, error)
 }
 
 type Abbreviator struct {
@@ -31,15 +29,15 @@ func New() *Abbreviator {
 	}
 }
 
-func (s *Abbreviator) CreateID(data []byte) (string, error) {
-	hash, err := s.hash.Write(data)
+func (a *Abbreviator) CreateID(data []byte, base string) (string, error) {
+	hash, err := a.hash.Write(data)
 	if err != nil {
 		return "", err
 	}
-	shortURL, err := s.sc.Encode([]uint64{uint64(hash)})
+	shortURL, err := a.sc.Encode([]uint64{uint64(hash)})
 	if err != nil {
 		return "", err
 	}
-	shortURL = constants.HostPrefix + shortURL
+	shortURL = base + "/" + shortURL
 	return shortURL, nil
 }

@@ -6,18 +6,21 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/nikishin42/shortener/cmd/shortener/config"
 	"github.com/nikishin42/shortener/cmd/shortener/pkg/abbreviator"
 	"github.com/nikishin42/shortener/cmd/shortener/pkg/storage"
 )
 
 type Server struct {
+	Config      *config.Config
 	Storage     storage.StorageI
 	Abbreviator abbreviator.AbbreviatorI
 	Router      *mux.Router
 }
 
-func New(storage storage.StorageI, abbreviator abbreviator.AbbreviatorI) *Server {
+func New(config *config.Config, storage storage.StorageI, abbreviator abbreviator.AbbreviatorI) *Server {
 	app := &Server{
+		Config:      config,
 		Storage:     storage,
 		Abbreviator: abbreviator,
 		Router:      mux.NewRouter(),
@@ -27,6 +30,6 @@ func New(storage storage.StorageI, abbreviator abbreviator.AbbreviatorI) *Server
 	return app
 }
 
-func (a *Server) Start() {
-	log.Fatal(http.ListenAndServe(":8080", a.Router))
+func (s *Server) Start() {
+	log.Fatal(http.ListenAndServe(s.Config.Address, s.Router))
 }
