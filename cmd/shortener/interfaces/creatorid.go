@@ -6,3 +6,8 @@ type Storage interface {
 	GetFullURL(shortURL string) (string, bool)
 	SetPair(shortURL, fullURL string) error
 }
+
+type GetOrSetID interface {
+	GetID(fullURL string) (string, bool)
+	SetPair(shortURL, fullURL string) error
+}
