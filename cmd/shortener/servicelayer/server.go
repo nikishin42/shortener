@@ -1,24 +1,24 @@
-package server
+package servicelayer
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 
 	"github.com/nikishin42/shortener/cmd/shortener/config"
-	"github.com/nikishin42/shortener/cmd/shortener/pkg/abbreviator"
-	"github.com/nikishin42/shortener/cmd/shortener/pkg/storage"
+	"github.com/nikishin42/shortener/cmd/shortener/interfaces"
 )
 
 type Server struct {
 	Config      *config.Config
-	Storage     storage.StorageI
-	Abbreviator abbreviator.AbbreviatorI
+	Storage     interfaces.Storage
+	Abbreviator interfaces.CreatorID
 	Router      *mux.Router
 }
 
-func New(config *config.Config, storage storage.StorageI, abbreviator abbreviator.AbbreviatorI) *Server {
+func New(config *config.Config, storage interfaces.Storage, abbreviator interfaces.CreatorID) *Server {
 	app := &Server{
 		Config:      config,
 		Storage:     storage,
@@ -31,5 +31,8 @@ func New(config *config.Config, storage storage.StorageI, abbreviator abbreviato
 }
 
 func (s *Server) Start() {
-	log.Fatal(http.ListenAndServe(s.Config.Address, s.Router))
+	err := http.ListenAndServe(s.Config.Address, s.Router)
+	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Print("Error: ", err)
+	}
 }

@@ -1,18 +1,17 @@
-package server
+package servicelayer
 
 import (
 	"io"
 	"log"
 	"net/http"
 	"net/url"
+
+	"github.com/nikishin42/shortener/cmd/shortener/businesslayer"
 )
 
 func (s *Server) Homepage(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		log.Println("wrong method:", r.Method)
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
+	defer r.Body.Close()
+
 	if len(r.URL.Path) > 1 {
 		log.Println("query not empty")
 		w.WriteHeader(http.StatusBadRequest)
@@ -31,34 +30,23 @@ func (s *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if id, ok := s.Storage.GetID(fullURL); ok {
+	id, fromCache, err := businesslayer.CreateID(s.Storage, s.Abbreviator, bodyData, s.Config.BaseShortenerAddress)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if fromCache {
 		log.Printf("ID for %s found: %s", fullURL, id)
+		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(id))
 		return
 	}
-	id, err := s.Abbreviator.CreateID(bodyData, s.Config.BaseShortenerAddress)
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	err = s.Storage.SetPair(id, fullURL)
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	log.Printf("ID for %s created: %s", fullURL, id)
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(id))
 }
 
 func (s *Server) Redirect(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		log.Println("wrong method:", r.Method)
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
 	if len(r.URL.Path) < 2 {
 		log.Println("empty query")
 		w.WriteHeader(http.StatusBadRequest)

@@ -4,9 +4,9 @@ import (
 	"github.com/nikishin42/shortener/cmd/shortener/config"
 	"github.com/nikishin42/shortener/cmd/shortener/pkg/abbreviator"
 	"github.com/nikishin42/shortener/cmd/shortener/pkg/storage"
-	"github.com/nikishin42/shortener/cmd/shortener/server"
+	"github.com/nikishin42/shortener/cmd/shortener/servicelayer"
 )
 
 func main() {
-	server.New(config.New(), storage.New(), abbreviator.New()).Start()
+	servicelayer.New(config.New(), storage.New(), abbreviator.New()).Start()
 }

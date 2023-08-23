@@ -8,11 +8,6 @@ import (
 	"github.com/sqids/sqids-go"
 )
 
-//go:generate mockgen --build_flags=--mod=mod -package=abbreviator -destination=abbreviator_mock.go . AbbreviatorI
-type AbbreviatorI interface {
-	CreateID(data []byte, base string) (string, error)
-}
-
 type Abbreviator struct {
 	hash hash.Hash
 	sc   *sqids.Sqids

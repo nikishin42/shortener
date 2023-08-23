@@ -1,4 +1,4 @@
-package server
+package servicelayer
 
 import (
 	"io"
@@ -10,10 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
+	_ "github.com/gorilla/mux"
+
 	"github.com/nikishin42/shortener/cmd/shortener/config"
 	"github.com/nikishin42/shortener/cmd/shortener/constants"
-	"github.com/nikishin42/shortener/cmd/shortener/pkg/abbreviator"
-	"github.com/nikishin42/shortener/cmd/shortener/pkg/storage"
+	"github.com/nikishin42/shortener/cmd/shortener/interfaces"
 )
 
 type errReader int
@@ -38,29 +39,17 @@ func TestServer_Homepage(t *testing.T) {
 	tests := []struct {
 		name  string
 		args  args
-		setup func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI)
+		setup func(abbreviator *interfaces.MockCreatorID, storage *interfaces.MockStorage)
 		exp   expexted
 	}{
 		{
-			name: "wrong method error",
-			args: args{
-				method: http.MethodGet,
-				body:   strings.NewReader("https://music.yandex.ru/"),
-			},
-			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {},
-			exp: expexted{
-				status: http.StatusMethodNotAllowed,
-				body:   "",
-			},
-		},
-		{
-			name: "query not empty error",
+			name: "id not empty error",
 			args: args{
 				method: http.MethodPost,
 				body:   strings.NewReader("https://music.yandex.ru/"),
 				query:  "not_empty",
 			},
-			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {},
+			setup: func(abbreviator *interfaces.MockCreatorID, storage *interfaces.MockStorage) {},
 			exp: expexted{
 				status: http.StatusBadRequest,
 				body:   "",
@@ -72,7 +61,7 @@ func TestServer_Homepage(t *testing.T) {
 				method: http.MethodPost,
 				body:   errReader(0),
 			},
-			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {},
+			setup: func(abbreviator *interfaces.MockCreatorID, storage *interfaces.MockStorage) {},
 			exp: expexted{
 				status: http.StatusBadRequest,
 				body:   "",
@@ -84,7 +73,7 @@ func TestServer_Homepage(t *testing.T) {
 				method: http.MethodPost,
 				body:   strings.NewReader("literally not URL"),
 			},
-			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {},
+			setup: func(abbreviator *interfaces.MockCreatorID, storage *interfaces.MockStorage) {},
 			exp: expexted{
 				status: http.StatusBadRequest,
 				body:   "",
@@ -96,7 +85,7 @@ func TestServer_Homepage(t *testing.T) {
 				method: http.MethodPost,
 				body:   strings.NewReader("https://music.yandex.ru/"),
 			},
-			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
+			setup: func(abbreviator *interfaces.MockCreatorID, storage *interfaces.MockStorage) {
 				storage.EXPECT().GetID("https://music.yandex.ru/").Return("", false)
 				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/"), constants.HTTPHostPrefix).Return(constants.HTTPHostPrefix+"/"+"Fy", nil)
 				storage.EXPECT().SetPair(constants.HTTPHostPrefix+"/"+"Fy", "https://music.yandex.ru/").Return(nil)
@@ -112,7 +101,7 @@ func TestServer_Homepage(t *testing.T) {
 				method: http.MethodPost,
 				body:   strings.NewReader("https://music.yandex.ru/"),
 			},
-			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
+			setup: func(abbreviator *interfaces.MockCreatorID, storage *interfaces.MockStorage) {
 				storage.EXPECT().GetID("https://music.yandex.ru/").Return("", false)
 				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/"), constants.HTTPHostPrefix).Return("", assert.AnError)
 			},
@@ -127,7 +116,7 @@ func TestServer_Homepage(t *testing.T) {
 				method: http.MethodPost,
 				body:   strings.NewReader("https://music.yandex.ru/"),
 			},
-			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
+			setup: func(abbreviator *interfaces.MockCreatorID, storage *interfaces.MockStorage) {
 				storage.EXPECT().GetID("https://music.yandex.ru/").Return("", false)
 				abbreviator.EXPECT().CreateID([]byte("https://music.yandex.ru/"), constants.HTTPHostPrefix).Return(constants.HTTPHostPrefix+"/"+"Fy", nil)
 				storage.EXPECT().SetPair(constants.HTTPHostPrefix+"/"+"Fy", "https://music.yandex.ru/").Return(assert.AnError)
@@ -143,7 +132,7 @@ func TestServer_Homepage(t *testing.T) {
 				method: http.MethodPost,
 				body:   strings.NewReader("https://music.yandex.ru/"),
 			},
-			setup: func(abbreviator *abbreviator.MockAbbreviatorI, storage *storage.MockStorageI) {
+			setup: func(abbreviator *interfaces.MockCreatorID, storage *interfaces.MockStorage) {
 				storage.EXPECT().GetID("https://music.yandex.ru/").Return(constants.HTTPHostPrefix+"/"+"Fy", true)
 			},
 			exp: expexted{
@@ -155,20 +144,20 @@ func TestServer_Homepage(t *testing.T) {
 	for _, tt := range tests {
 		tc := tt
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+			//t.Parallel()
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockStorage := storage.NewMockStorageI(ctrl)
-			mockAbbreviator := abbreviator.NewMockAbbreviatorI(ctrl)
+			mockStorage := interfaces.NewMockStorage(ctrl)
+			mockAbbreviator := interfaces.NewMockCreatorID(ctrl)
 			tc.setup(mockAbbreviator, mockStorage)
 
 			a := New(&config.Config{
-				Address:              constants.HTTPHostPrefix,
+				Address:              constants.DefaultHost,
 				BaseShortenerAddress: constants.HTTPHostPrefix,
 			}, mockStorage, mockAbbreviator)
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest(tc.args.method, a.Config.Address+"/"+tc.args.query, tc.args.body)
+			r := httptest.NewRequest(tc.args.method, "/"+tc.args.query, tc.args.body)
 			a.Homepage(w, r)
 
 			assert.Equal(t, tc.exp.status, w.Code)
@@ -182,7 +171,7 @@ func TestServer_Redirect(t *testing.T) {
 
 	type args struct {
 		method string
-		query  string
+		id     string
 	}
 	type expexted struct {
 		status int
@@ -191,28 +180,16 @@ func TestServer_Redirect(t *testing.T) {
 	tests := []struct {
 		name  string
 		args  args
-		setup func(storage *storage.MockStorageI)
+		setup func(storage *interfaces.MockStorage)
 		exp   expexted
 	}{
 		{
-			name: "wrong method",
-			args: args{
-				method: http.MethodPost,
-				query:  "",
-			},
-			setup: func(storage *storage.MockStorageI) {},
-			exp: expexted{
-				status: http.StatusMethodNotAllowed,
-				body:   "",
-			},
-		},
-		{
-			name: "empty query error",
+			name: "empty id error",
 			args: args{
 				method: http.MethodGet,
-				query:  "",
+				id:     "",
 			},
-			setup: func(storage *storage.MockStorageI) {
+			setup: func(storage *interfaces.MockStorage) {
 			},
 			exp: expexted{
 				status: http.StatusBadRequest,
@@ -223,9 +200,9 @@ func TestServer_Redirect(t *testing.T) {
 			name: "full URL not found error",
 			args: args{
 				method: http.MethodGet,
-				query:  "Fy",
+				id:     "Fy",
 			},
-			setup: func(storage *storage.MockStorageI) {
+			setup: func(storage *interfaces.MockStorage) {
 				storage.EXPECT().GetFullURL(constants.HTTPHostPrefix+"/"+"Fy").Return("", false)
 			},
 			exp: expexted{
@@ -237,9 +214,9 @@ func TestServer_Redirect(t *testing.T) {
 			name: "ok",
 			args: args{
 				method: http.MethodGet,
-				query:  "Fy",
+				id:     "Fy",
 			},
-			setup: func(storage *storage.MockStorageI) {
+			setup: func(storage *interfaces.MockStorage) {
 				storage.EXPECT().GetFullURL(constants.HTTPHostPrefix+"/"+"Fy").Return("https://music.yandex.ru/", true)
 			},
 			exp: expexted{
@@ -255,16 +232,16 @@ func TestServer_Redirect(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockStorage := storage.NewMockStorageI(ctrl)
-			mockAbbreviator := abbreviator.NewMockAbbreviatorI(ctrl)
+			mockStorage := interfaces.NewMockStorage(ctrl)
+			mockAbbreviator := interfaces.NewMockCreatorID(ctrl)
 			tc.setup(mockStorage)
 
 			a := New(&config.Config{
-				Address:              constants.HTTPHostPrefix,
+				Address:              constants.DefaultHost,
 				BaseShortenerAddress: constants.HTTPHostPrefix,
 			}, mockStorage, mockAbbreviator)
 			w := httptest.NewRecorder()
-			r := httptest.NewRequest(tc.args.method, a.Config.Address+"/"+tc.args.query, nil)
+			r := httptest.NewRequest(tc.args.method, "/"+tc.args.id, nil)
 			a.Redirect(w, r)
 
 			assert.Equal(t, tc.exp.status, w.Code)

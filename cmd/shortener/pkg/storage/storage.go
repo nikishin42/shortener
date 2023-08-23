@@ -4,13 +4,6 @@ import (
 	"fmt"
 )
 
-//go:generate mockgen --build_flags=--mod=mod -package=storage -destination=storage_mock.go . StorageI
-type StorageI interface {
-	GetID(fullURL string) (string, bool)
-	GetFullURL(shortURL string) (string, bool)
-	SetPair(shortURL, fullURL string) error
-}
-
 type Storage struct {
 	toShort map[string]string
 	toFull  map[string]string
