@@ -30,7 +30,7 @@ func (s *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	id, fromCache, err := businesslayer.CreateID(s.Storage, s.Abbreviator, bodyData, s.Config.BaseShortenerAddress)
+	id, fromCache, err := businesslayer.GetOrCreateID(s.Storage, s.Abbreviator, bodyData, s.Config.BaseShortenerAddress)
 	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
