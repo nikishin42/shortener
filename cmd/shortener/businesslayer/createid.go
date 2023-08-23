@@ -13,12 +13,12 @@ func CreateID(storage interfaces.GetOrSetID, abbreviator interfaces.CreatorID, b
 	}
 	id, err := abbreviator.CreateID(bodyData, baseShortAddress)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		return "", false, err
 	}
 	err = storage.SetPair(id, fullURL)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		return "", false, err
 	}
 	log.Printf("ID for %s created: %s", fullURL, id)

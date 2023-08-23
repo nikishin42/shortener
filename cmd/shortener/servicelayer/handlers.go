@@ -13,26 +13,26 @@ func (s *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if len(r.URL.Path) > 1 {
-		log.Println("query not empty")
+		log.Print("query not empty")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	bodyData, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	fullURL := string(bodyData)
 	_, err = url.ParseRequestURI(fullURL)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	id, fromCache, err := businesslayer.CreateID(s.Storage, s.Abbreviator, bodyData, s.Config.BaseShortenerAddress)
 	if err != nil {
-		log.Println(err)
+		log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -48,14 +48,14 @@ func (s *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 	if len(r.URL.Path) < 2 {
-		log.Println("empty query")
+		log.Print("empty query")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	id := s.Config.BaseShortenerAddress + "/" + r.URL.Path[1:]
-	fullURL, ok := s.Storage.GetFullURL(id)
-	if !ok {
-		log.Printf("URL for %s not found", id)
+	id := r.URL.Path[1:]
+	fullURL, err := businesslayer.GetFullAddress(s.Config.BaseShortenerAddress, id, s.Storage)
+	if err != nil {
+		log.Print(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
