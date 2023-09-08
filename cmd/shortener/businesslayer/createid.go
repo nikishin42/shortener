@@ -1,8 +1,6 @@
 package businesslayer
 
 import (
-	"log"
-
 	"github.com/nikishin42/shortener/cmd/shortener/interfaces"
 )
 
@@ -13,14 +11,11 @@ func GetOrCreateID(storage interfaces.GetOrSetID, abbreviator interfaces.Creator
 	}
 	id, err := abbreviator.CreateID(bodyData, baseShortAddress)
 	if err != nil {
-		log.Print(err)
 		return "", false, err
 	}
 	err = storage.SetPair(id, fullURL)
 	if err != nil {
-		log.Print(err)
 		return "", false, err
 	}
-	log.Printf("ID for %s created: %s", fullURL, id)
 	return id, false, nil
 }
