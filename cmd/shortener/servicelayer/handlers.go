@@ -1,12 +1,60 @@
 package servicelayer
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/nikishin42/shortener/cmd/shortener/businesslayer"
+	"github.com/nikishin42/shortener/cmd/shortener/models"
 )
+
+func (s *Server) Shortener(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	bodyData, err := io.ReadAll(r.Body)
+	if err != nil {
+		s.Logger.Error(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var shortenerReq models.ShortenerReq
+	err = json.Unmarshal(bodyData, &shortenerReq)
+	if err != nil {
+		s.Logger.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	fullURL := shortenerReq.Url
+	_, err = url.ParseRequestURI(fullURL)
+	if err != nil {
+		s.Logger.Error(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	id, fromCache, err := businesslayer.GetOrCreateID(s.Storage, s.Abbreviator, bodyData, s.Config.BaseShortenerAddress)
+	if err != nil {
+		s.Logger.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if fromCache {
+		s.Logger.Infof("ID for %s found: %s", fullURL, id)
+		w.WriteHeader(http.StatusOK)
+	} else {
+		s.Logger.Infof("ID for %s created: %s", fullURL, id)
+		w.WriteHeader(http.StatusCreated)
+	}
+	respBody, err := json.Marshal(models.ShortenerResp{Result: id})
+	if err != nil {
+		s.Logger.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Write(respBody)
+}
 
 func (s *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()

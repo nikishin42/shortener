@@ -29,6 +29,7 @@ func New(config *config.Config, storage interfaces.Storage, abbreviator interfac
 		Logger:      zap.NewExample().Sugar(),
 	}
 	app.Router.Handle("/", app.WithLogging(app.Homepage)).Methods(http.MethodPost)
+	app.Router.Handle("/api/shorten", app.WithLogging(app.Shortener)).Methods(http.MethodPost)
 	app.Router.Handle("/{id}", app.WithLogging(app.Redirect)).Methods(http.MethodGet)
 	return app
 }
