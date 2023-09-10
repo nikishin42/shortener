@@ -44,9 +44,6 @@ func (c *Storage) setValue() error {
 	for _, event := range events {
 		c.toShort[event.OriginURL] = event.ShortURL
 		c.toFull[event.ShortURL] = event.OriginURL
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }

@@ -14,7 +14,7 @@ type FileReaderWriter struct {
 }
 
 type FileURL struct {
-	Uuid      string `json:"uuid"`
+	UUID      string `json:"uuid"`
 	ShortURL  string `json:"short_url"`
 	OriginURL string `json:"origin_url"`
 }
@@ -61,7 +61,7 @@ func (f FileReaderWriter) WriteFileEvent(shortURL, originURL string) error {
 		return nil
 	}
 	event := FileURL{
-		Uuid:      uuid.New().String(),
+		UUID:      uuid.New().String(),
 		ShortURL:  shortURL,
 		OriginURL: originURL,
 	}
