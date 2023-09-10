@@ -11,18 +11,20 @@ import (
 type Config struct {
 	Address              string
 	BaseShortenerAddress string
+	FileStoragePath      string
 }
 
-func parseFlags() (string, string) {
+func parseFlags() (string, string, string) {
 	address := flag.String("a", constants.DefaultHost, "HTTP server start address")
 	baseShortenerAddress := flag.String("b", constants.HTTPHostPrefix, "base address of the resulting shortened URL")
+	defaultFilePath := flag.String("f", constants.DefaultFilePath, "base file path")
 	flag.Parse()
-	log.Printf("flags parsed: -a: %s, -b: %s", *address, *baseShortenerAddress)
-	return *address, *baseShortenerAddress
+	log.Printf("flags parsed: -a: %s, -b: %s, -f: %s", *address, *baseShortenerAddress, *defaultFilePath)
+	return *address, *baseShortenerAddress, *defaultFilePath
 }
 
 func New() *Config {
-	a, b := parseFlags()
+	a, b, f := parseFlags()
 	address, ok := os.LookupEnv("SERVER_ADDRESS")
 	if ok {
 		log.Printf("server address got from env: %s", address)
@@ -37,8 +39,16 @@ func New() *Config {
 		baseShortenerAddress = b
 		log.Printf("base shortener address got from flag: %s", baseShortenerAddress)
 	}
+	baseFilePath, ok := os.LookupEnv("FILE_STORAGE_PATH")
+	if ok {
+		log.Printf("base file path got from env: %s", baseFilePath)
+	} else {
+		baseFilePath = f
+		log.Printf("base file path got from flag: %s", baseFilePath)
+	}
 	return &Config{
 		Address:              address,
 		BaseShortenerAddress: baseShortenerAddress,
+		FileStoragePath:      baseFilePath,
 	}
 }
