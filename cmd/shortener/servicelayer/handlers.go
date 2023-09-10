@@ -37,7 +37,7 @@ func (s *Server) Shortener(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	id, fromCache, err := businesslayer.GetOrCreateID(s.Storage, s.Abbreviator, bodyData, s.Config.BaseShortenerAddress)
+	id, fromCache, err := businesslayer.GetOrCreateID(s.Storage, s.Abbreviator, []byte(fullURL), s.Config.BaseShortenerAddress)
 	if err != nil {
 		s.Logger.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -50,10 +50,8 @@ func (s *Server) Shortener(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if fromCache {
-		s.Logger.Infof("ID for %s found: %s", fullURL, id)
 		w.WriteHeader(http.StatusOK)
 	} else {
-		s.Logger.Infof("ID for %s created: %s", fullURL, id)
 		w.WriteHeader(http.StatusCreated)
 	}
 	w.Header().Add("Content-Type", "application/json")
@@ -88,19 +86,16 @@ func (s *Server) Homepage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if fromCache {
-		s.Logger.Infof("ID for %s found: %s", fullURL, id)
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(id))
 		return
 	}
-	s.Logger.Infof("ID for %s created: %s", fullURL, id)
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte(id))
 }
 
 func (s *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 	if len(r.URL.Path) < 2 {
-		s.Logger.Infof("empty path")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -111,7 +106,6 @@ func (s *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	s.Logger.Infof("URL for %s found: %s", id, fullURL)
 	w.Header().Set("Location", fullURL)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
