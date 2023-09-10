@@ -11,6 +11,9 @@ import (
 )
 
 func (s *Server) Shortener(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		w.WriteHeader(http.StatusUnsupportedMediaType)
+	}
 	defer r.Body.Close()
 
 	bodyData, err := io.ReadAll(r.Body)
@@ -27,7 +30,7 @@ func (s *Server) Shortener(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	fullURL := shortenerReq.Url
+	fullURL := shortenerReq.URL
 	_, err = url.ParseRequestURI(fullURL)
 	if err != nil {
 		s.Logger.Error(err)
@@ -40,6 +43,12 @@ func (s *Server) Shortener(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	respBody, err := json.Marshal(models.ShortenerResp{Result: id})
+	if err != nil {
+		s.Logger.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	if fromCache {
 		s.Logger.Infof("ID for %s found: %s", fullURL, id)
 		w.WriteHeader(http.StatusOK)
@@ -47,12 +56,7 @@ func (s *Server) Shortener(w http.ResponseWriter, r *http.Request) {
 		s.Logger.Infof("ID for %s created: %s", fullURL, id)
 		w.WriteHeader(http.StatusCreated)
 	}
-	respBody, err := json.Marshal(models.ShortenerResp{Result: id})
-	if err != nil {
-		s.Logger.Error(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	w.Header().Add("Content-Type", "application/json")
 	w.Write(respBody)
 }
 
