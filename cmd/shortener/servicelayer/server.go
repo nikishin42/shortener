@@ -28,7 +28,7 @@ func New(config *config.Config, storage interfaces.Storage, abbreviator interfac
 		Router:      mux.NewRouter(),
 		Logger:      zap.NewExample().Sugar(),
 	}
-	app.Router.Use(app.Logging)
+	app.Router.Use(app.Logging, app.gzipMiddleware)
 	app.Router.HandleFunc("/", app.Homepage).Methods(http.MethodPost)
 	app.Router.HandleFunc("/api/shorten", app.Shortener).Methods(http.MethodPost)
 	app.Router.HandleFunc("/{id}", app.Redirect).Methods(http.MethodGet)
