@@ -8,5 +8,6 @@ import (
 )
 
 func main() {
-	servicelayer.New(config.New(), storage.New(), abbreviator.New()).Start()
+	cfg := config.New()
+	servicelayer.New(cfg, storage.New(*cfg), abbreviator.New()).Start()
 }

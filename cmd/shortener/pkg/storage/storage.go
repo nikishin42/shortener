@@ -2,11 +2,15 @@ package storage
 
 import (
 	"fmt"
+
+	"github.com/nikishin42/shortener/cmd/shortener/config"
+	"github.com/nikishin42/shortener/cmd/shortener/pkg/filereader"
 )
 
 type Storage struct {
-	toShort map[string]string
-	toFull  map[string]string
+	toShort     map[string]string
+	toFull      map[string]string
+	fileService *filereader.FileReaderWriter
 }
 
 func (c *Storage) GetID(fullURL string) (string, bool) {
@@ -25,12 +29,38 @@ func (c *Storage) SetPair(id, fullURL string) error {
 	}
 	c.toShort[fullURL] = id
 	c.toFull[id] = fullURL
+	err := c.fileService.WriteFileEvent(id, fullURL)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func New() *Storage {
-	return &Storage{
-		toShort: make(map[string]string),
-		toFull:  make(map[string]string),
+func (c *Storage) setValue() error {
+	events, err := c.fileService.ReadFileEvents()
+	if err != nil {
+		return err
 	}
+	for _, event := range events {
+		c.toShort[event.OriginURL] = event.ShortURL
+		c.toFull[event.ShortURL] = event.OriginURL
+	}
+	return nil
+}
+
+func New(cfg config.Config) *Storage {
+	writer, err := filereader.New(cfg.FileStoragePath)
+	if err != nil {
+		panic(err)
+	}
+	s := &Storage{
+		toShort:     make(map[string]string),
+		toFull:      make(map[string]string),
+		fileService: writer,
+	}
+	err = s.setValue()
+	if err != nil {
+		panic(err)
+	}
+	return s
 }
